@@ -3,3 +3,6 @@ __pycache__/
 .env
 *.db
 venv/
+debug.html
+debug.png
+0
