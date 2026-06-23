@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Price Tracker Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 20px;
+    }
+    h1 { color: #4caf50; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th { background: #222; }
+    tr:nth-child(even) { background: #1a1a1a; }
+    a { color: #4caf50; }
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover { background: #43a047; }
+    .delete-btn { background: #e53935; }
+    .delete-btn:hover { background: #c62828; }
+    #status { margin-top: 10px; color: #aaa; }
+  </style>
+</head>
+<body>
+  <h1>Price Tracker</h1>
+  <button onclick="checkNow()">Check Prices Now</button>
+  <span id="status"></span>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Target Price</th>
+        <th>Last Price</th>
+        <th>Last Checked</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="products"></tbody>
+  </table>
+
+  <script>
+    async function loadProducts() {
+      const res = await fetch('/api/products');
+      const products = await res.json();
+      const tbody = document.getElementById('products');
+      tbody.innerHTML = '';
+      products.forEach((p, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><a href="${p.url}" target="_blank">${p.name}</a></td>
+          <td>${p.target_price}</td>
+          <td>${p.last_price ?? '-'}</td>
+          <td>${p.last_checked ? new Date(p.last_checked).toLocaleString() : '-'}</td>
+          <td><button class="delete-btn" onclick="deleteProduct(${i})">Remove</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function deleteProduct(index) {
+      await fetch(`/api/products/${index}`, { method: 'DELETE' });
+      loadProducts();
+    }
+
+    async function checkNow() {
+      document.getElementById('status').innerText = 'Checking...';
+      await fetch('/api/check', { method: 'POST' });
+      document.getElementById('status').innerText = 'Done!';
+      loadProducts();
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>

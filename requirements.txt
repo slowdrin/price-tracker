@@ -1,2 +1,7 @@
 playwright
 apscheduler
+python-dotenv
+flask
+flask-cors
+pystray
+pillow

@@ -41,3 +41,15 @@ def get_last_price(url: str):
     row = c.fetchone()
     conn.close()
     return row
+
+
+def get_history(url: str):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute(
+        "SELECT price, checked_at FROM price_history WHERE url = ? ORDER BY id ASC",
+        (url,)
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [{"price": r[0], "checked_at": r[1]} for r in rows]
