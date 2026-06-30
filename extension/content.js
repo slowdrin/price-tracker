@@ -1,0 +1,1 @@
+console.log("Price Tracker extension loaded on this page.");

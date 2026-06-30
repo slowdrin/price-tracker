@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Price Tracker",
+  "version": "1.0.0",
+  "description": "Add products to your local Price Tracker from the browser.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "http://127.0.0.1:5000/*",
+    "http://localhost:5000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Track this product"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.aliexpress.com/*", "https://*.aliexpress.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
+from urllib.parse import urlsplit, urlunsplit
 
 from db import init_db, get_last_price, get_history
 from tracker import load_products, save_products, check_all_products
@@ -8,6 +9,21 @@ app = Flask(__name__)
 CORS(app)
 
 init_db()
+
+
+def clean_url(url: str) -> str:
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+
+def parse_target_price(value) -> float:
+    if value is None or value == "":
+        raise ValueError("target_price is required")
+
+    if isinstance(value, str):
+        value = value.replace(",", ".")
+
+    return float(value)
 
 
 @app.route("/")
@@ -21,12 +37,8 @@ def get_products():
 
     for product in products:
         last = get_last_price(product["url"])
-        if last:
-            product["last_price"] = last[0]
-            product["last_checked"] = last[1]
-        else:
-            product["last_price"] = None
-            product["last_checked"] = None
+        product["last_price"] = last[0] if last else None
+        product["last_checked"] = last[1] if last else None
 
     return jsonify(products)
 
@@ -38,12 +50,17 @@ def add_product():
     if not data:
         return jsonify({"error": "JSON body required"}), 400
 
-    url = data.get("url")
+    url = clean_url(data.get("url", ""))
     target_price = data.get("target_price")
     name = data.get("name", "")
 
     if not url or target_price is None:
         return jsonify({"error": "url and target_price required"}), 400
+
+    try:
+        target_price = parse_target_price(target_price)
+    except ValueError:
+        return jsonify({"error": "target_price must be a number"}), 400
 
     products = load_products()
 
@@ -54,13 +71,34 @@ def add_product():
     new_product = {
         "name": name or "Unknown Product",
         "url": url,
-        "target_price": float(target_price)
+        "target_price": target_price
     }
 
     products.append(new_product)
     save_products(products)
 
     return jsonify(new_product), 201
+
+
+@app.route("/api/products/<int:index>", methods=["PUT"])
+def update_product(index):
+    data = request.get_json()
+    products = load_products()
+
+    if index < 0 or index >= len(products):
+        return jsonify({"error": "Product not found"}), 404
+
+    if "name" in data:
+        products[index]["name"] = data["name"]
+
+    if "target_price" in data:
+        try:
+            products[index]["target_price"] = parse_target_price(data["target_price"])
+        except ValueError:
+            return jsonify({"error": "target_price must be a number"}), 400
+
+    save_products(products)
+    return jsonify(products[index])
 
 
 @app.route("/api/products/<int:index>", methods=["DELETE"])
